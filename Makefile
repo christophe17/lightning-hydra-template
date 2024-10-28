@@ -28,3 +28,6 @@ test-full: ## Run all tests
 
 train: ## Train the model
 	python src/train.py
+
+train-few: ## Train the model with few epochs
+	python src/train.py trainer.max_epochs=2 trainer.accelerator=gpu

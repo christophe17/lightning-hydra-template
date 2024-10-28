@@ -35,30 +35,40 @@ Or run the project in docker. See more in [Docker](#docker) section.
 
 ## Table of content
 
-- [Main technologies](#main-technologies)
-- [Project structure](#project-structure)
-- [Workflow - how it works](#workflow---how-it-works)
-  - [Basic workflow](#basic-workflow)
-  - [LightningDataModule](#lightningdatamodule)
-  - [LightningModule](#lightningmodule)
-  - [Training loop](#training-loop)
-  - [Evaluation and prediction loops](#evaluation-and-prediction-loops)
-  - [Callbacks](#callbacks)
-  - [Extensions](#extensions)
-- [Hydra configs](#hydra-configs)
-  - [How to run pipeline with Hydra](#how-to-run-pipeline-with-hydra)
-  - [Instantiating objects with Hydra](#instantiating-objects-with-hydra)
-  - [Command line operations](#command-line-operations)
-  - [Additional out-of-the-box features](#additional-out-of-the-box-features)
-  - [Custom config resolvers](#custom-config-resolvers)
-  - [Simplify complex modules configuring](#simplify-complex-modules-configuring)
-- [Logs](#logs)
-- [Data](#data)
-- [Notebooks](#notebooks)
-- [Hyperparameters search](#hyperparameters-search)
-- [Docker](#docker)
-- [Tests](#tests)
-- [Continuous integration](#continuous-integration)
+- [Yet Another Lightning Hydra Template](#yet-another-lightning-hydra-template)
+  - [Quick start](#quick-start)
+  - [Table of content](#table-of-content)
+  - [Main technologies](#main-technologies)
+  - [Project structure](#project-structure)
+  - [Workflow - how it works](#workflow---how-it-works)
+    - [Basic workflow](#basic-workflow)
+    - [LightningDataModule](#lightningdatamodule)
+    - [LightningModule](#lightningmodule)
+      - [LightningModule API](#lightningmodule-api)
+      - [Metrics](#metrics)
+      - [Loss](#loss)
+      - [Model](#model)
+      - [Implemented LightningModules](#implemented-lightningmodules)
+    - [Training loop](#training-loop)
+    - [Evaluation and prediction loops](#evaluation-and-prediction-loops)
+    - [Callbacks](#callbacks)
+    - [Extensions](#extensions)
+      - [DDP plugins](#ddp-plugins)
+      - [GradCam](#gradcam)
+  - [Hydra configs](#hydra-configs)
+    - [How to run pipeline with Hydra](#how-to-run-pipeline-with-hydra)
+    - [Instantiating objects with Hydra](#instantiating-objects-with-hydra)
+    - [Command line operations](#command-line-operations)
+    - [Additional out-of-the-box features](#additional-out-of-the-box-features)
+    - [Custom config resolvers](#custom-config-resolvers)
+    - [Simplify complex modules configuring](#simplify-complex-modules-configuring)
+  - [Logs](#logs)
+  - [Data](#data)
+  - [Notebooks](#notebooks)
+  - [Hyperparameters search](#hyperparameters-search)
+  - [Docker](#docker)
+  - [Tests](#tests)
+  - [Continuous integration](#continuous-integration)
 
 ## Main technologies
 
@@ -300,11 +310,11 @@ Minimum API has the following methods:
 Also, you can override optional methods for each step to perform additional logic:
 
 - `training_step_end`: training step end operations
-- `training_epoch_end`: training epoch end operations
+- `on_train_epoch_end`: training epoch end operations
 - `validation_step_end`: validation step end operations
-- `validation_epoch_end`: validation epoch end operations
+- `on_validation_epoch_end`: validation epoch end operations
 - `test_step_end`: test step end operations
-- `test_epoch_end`: test epoch end operations
+- `on_test_epoch_end`: test epoch end operations
 
 <details>
 
@@ -329,7 +339,7 @@ class LitModel(LightningModule):
     def training_step_end(self, step_output: Any):
         ...
 
-    def training_epoch_end(self, outputs: Any):
+    def on_train_epoch_end(self, outputs: Any):
         ...
 
     def validation_step(self, *args: Any, **kwargs: Any):
@@ -338,7 +348,7 @@ class LitModel(LightningModule):
     def validation_step_end(self, step_output: Any):
         ...
 
-    def validation_epoch_end(self, outputs: Any):
+    def on_validation_epoch_end(self, outputs: Any):
         ...
 
     def test_step(self, *args: Any, **kwargs: Any):
@@ -347,7 +357,7 @@ class LitModel(LightningModule):
     def test_step_end(self, step_output: Any):
         ...
 
-    def test_epoch_end(self, outputs: Any):
+    def on_test_epoch_end(self, outputs: Any):
         ...
 
     def configure_optimizers(self):

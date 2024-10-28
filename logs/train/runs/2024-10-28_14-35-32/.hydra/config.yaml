@@ -1,0 +1,167 @@
+task_name: train
+tags:
+- dev
+train: true
+test: true
+save_state_dict: true
+ckpt_path: null
+seed: 42
+name: lightning-template-0.1.0
+datamodule:
+  _target_: src.datamodules.mnist_datamodule.MNISTDataModule
+  datasets:
+    data_dir: ${paths.data_dir}
+    train_val_test_split:
+    - 55000
+    - 5000
+    - 10000
+    seed: 42
+  transforms:
+    train:
+      order:
+      - normalize
+      normalize:
+        _target_: albumentations.Normalize
+        mean:
+        - 0.1307
+        std:
+        - 0.3081
+        p: 1.0
+    valid_test_predict:
+      order:
+      - normalize
+      normalize:
+        _target_: albumentations.Normalize
+        mean:
+        - 0.1307
+        std:
+        - 0.3081
+        p: 1.0
+  loaders:
+    train:
+      batch_size: 128
+      shuffle: true
+      num_workers: 0
+      drop_last: true
+      pin_memory: false
+    valid:
+      batch_size: 128
+      shuffle: false
+      num_workers: 0
+      drop_last: false
+      pin_memory: false
+    test:
+      batch_size: 128
+      shuffle: false
+      num_workers: 0
+      drop_last: false
+      pin_memory: false
+    predict:
+      batch_size: 128
+      shuffle: false
+      num_workers: 0
+      drop_last: false
+      pin_memory: false
+module:
+  _target_: src.modules.single_module.MNISTLitModule
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.001
+    weight_decay: 0.0
+  scheduler:
+    scheduler:
+      _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+      mode: max
+      factor: 0.1
+      min_lr: 1.0e-09
+      patience: 10
+      verbose: true
+    extras:
+      monitor: ${replace:"__metric__/valid"}
+      interval: epoch
+      frequency: 1
+  logging:
+    on_step: false
+    on_epoch: true
+    sync_dist: false
+    prog_bar: true
+  network:
+    model:
+      _target_: src.modules.models.simple_dense_net.SimpleDenseNet
+      input_size: 784
+      lin1_size: 64
+      lin2_size: 128
+      lin3_size: 64
+      output_size: 10
+    loss:
+      _target_: torch.nn.CrossEntropyLoss
+    metrics:
+      main:
+        _target_: torchmetrics.Accuracy
+        task: multiclass
+        num_classes: 10
+        top_k: 1
+      valid_best:
+        _target_: torchmetrics.MaxMetric
+    output_activation:
+      _target_: torch.softmax
+      dim: 1
+callbacks:
+  model_checkpoint:
+    _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    dirpath: ${paths.output_dir}/checkpoints
+    filename: ${replace:"epoch{epoch:03d}-loss_valid{__loss__/valid:.4f}-metric_valid{__metric__/valid:.4f}"}
+    monitor: ${replace:"__metric__/valid"}
+    verbose: false
+    save_last: true
+    save_top_k: 5
+    mode: max
+    auto_insert_metric_name: false
+    save_weights_only: false
+    every_n_train_steps: null
+    train_time_interval: null
+    every_n_epochs: null
+    save_on_train_epoch_end: null
+  early_stopping:
+    _target_: pytorch_lightning.callbacks.EarlyStopping
+    monitor: ${replace:"__metric__/valid"}
+    min_delta: 5.0e-05
+    patience: 15
+    verbose: false
+    mode: max
+    strict: true
+    check_finite: true
+    stopping_threshold: null
+    divergence_threshold: null
+    check_on_train_epoch_end: null
+  model_summary:
+    _target_: pytorch_lightning.callbacks.RichModelSummary
+    max_depth: 1
+  rich_progress_bar:
+    _target_: pytorch_lightning.callbacks.RichProgressBar
+trainer:
+  _target_: pytorch_lightning.Trainer
+  default_root_dir: ${paths.output_dir}
+  min_epochs: 1
+  max_epochs: 2
+  accelerator: gpu
+  devices: 1
+  check_val_every_n_epoch: 1
+  deterministic: false
+paths:
+  root_dir: ${oc.env:PROJECT_ROOT}
+  data_dir: ${paths.root_dir}/data/
+  log_dir: ${paths.root_dir}/logs/
+  output_dir: ${hydra:runtime.output_dir}
+  work_dir: ${hydra:runtime.cwd}
+extras:
+  ignore_warnings: false
+  enforce_tags: true
+  print_config: true
+  plugins: null
+  state_dict_saving_params:
+    symbols: 6
+    exceptions:
+    - loss
+  predictions_saving_params:
+    output_format: json
