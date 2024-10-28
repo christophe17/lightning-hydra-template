@@ -1027,7 +1027,7 @@ optimized metric value from the launch file.
 Execute it with:
 
 ```shell
-python src/train.py -m hparams_search=mnist_optuna
+python src/train.py hparams_search=mnist_optuna
 ```
 
 The `optimization_results.yaml` will be available under `logs/task_name/multirun` folder.

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-tensorboard --logdir="../logs/" --port=9999
+tensorboard --logdir="./logs/tensorboard/" --port=9999

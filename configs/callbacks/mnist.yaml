@@ -35,3 +35,6 @@ model_summary:
 
 rich_progress_bar:
   _target_: pytorch_lightning.callbacks.RichProgressBar
+
+# light_progress_bar:
+#   _target_: src.callbacks.light_progress_bar.LightProgressBar
