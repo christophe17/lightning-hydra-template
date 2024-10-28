@@ -25,7 +25,7 @@ scheduler:
     factor: 0.1
     min_lr: 1.0e-9
     patience: 10
-    verbose: True
+    # verbose: True # deprecated.
   extras:
     monitor: ${replace:"__metric__/valid"}
     interval: "epoch"
