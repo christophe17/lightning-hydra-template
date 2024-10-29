@@ -1,0 +1,1 @@
+OPTUNA_BACKEND_STORE=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@mlflow-backend-store:5432/${POSTGRES_DB}

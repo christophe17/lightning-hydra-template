@@ -30,4 +30,6 @@ train: ## Train the model
 	python src/train.py
 
 train-few: ## Train the model with few epochs
-	python src/train.py trainer.max_epochs=10 trainer.accelerator=gpu logger=tensorboard hparams_search=mnist_optuna
+	python src/train.py trainer.max_epochs=10 trainer.accelerator=gpu logger=aim hparams_search=mnist_optuna
+
+# cd logs/.aim && aim up

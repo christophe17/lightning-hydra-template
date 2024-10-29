@@ -1,0 +1,43 @@
+volumes:
+  postgresql-mlflow-data:
+  postgresql-optuna-data:
+  # mlflow-artifact-store:
+  # optuna-artifact-store:
+
+services:
+  # mlflow-db:
+  #   container_name: mlflow-backend-store
+  #   image: postgres:15
+  #   env_file:
+  #     - .envs/.postgres
+  #   volumes:
+  #     - postgresql-mlflow-data:/var/lib/postgresql/data
+  #   ports:
+  #     - 5432:5432
+  
+  # optuna-db:
+  #   container_name: optuna-backend-store
+  #   image: postgres:15
+  #   env_file:
+  #     - .envs/.postgres
+  #   volumes:
+  #     - postgresql-optuna-data:/var/lib/postgresql/data
+  #   ports:
+  #     - 5433:5432
+
+  optuna-dashboard:
+    container_name: optuna-dashboard
+    build:
+      context: ./services/optuna-dashboard
+      dockerfile: Dockerfile
+
+    
+    ports:
+      - 8080:8080
+
+  # optuna-dashboard:
+  #   container_name: optuna-dashboard
+  #   image: optuna/optuna-dashboard:latest
+  #   ports:
+  #     - 5006:5006
+  #   command: ["optuna", "dashboard", "sqlite:///optuna.db"]
