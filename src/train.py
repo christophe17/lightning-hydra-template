@@ -51,7 +51,7 @@ root = pyrootutils.setup_root(
 _HYDRA_PARAMS = {
     "version_base": "1.3",
     "config_path": str(root / "configs"),
-    "config_name": "train.yaml",
+    "config_name": "daic_train.yaml",
 }
 
 from src import utils
@@ -87,107 +87,110 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
         cfg.datamodule, _recursive_=False
     )
 
+    return None, None
     # Init lightning model
-    log.info(f"Instantiating lightning model <{cfg.module._target_}>")
-    model: LightningModule = hydra.utils.instantiate(
-        cfg.module, _recursive_=False
-    )
+    # log.info(f"Instantiating lightning model <{cfg.module._target_}>")
+    # model: LightningModule = hydra.utils.instantiate(
+    #     cfg.module, _recursive_=False
+    # )
 
-    # Init callbacks
-    log.info("Instantiating callbacks...")
-    callbacks: List[Callback] = utils.instantiate_callbacks(
-        cfg.get("callbacks")
-    )
+    # # Init callbacks
+    # log.info("Instantiating callbacks...")
+    # callbacks: List[Callback] = utils.instantiate_callbacks(
+    #     cfg.get("callbacks")
+    # )
 
-    # Init loggers
-    log.info("Instantiating loggers...")
-    logger: List[Logger] = utils.instantiate_loggers(
-        cfg.get("logger")
-    )
+    # # Init loggers
+    # log.info("Instantiating loggers...")
+    # logger: List[Logger] = utils.instantiate_loggers(
+    #     cfg.get("logger")
+    # )
 
-    # Init lightning ddp plugins
-    log.info("Instantiating plugins...")
-    plugins: Optional[List[Any]] = utils.instantiate_plugins(cfg)
+    # # Init lightning ddp plugins
+    # log.info("Instantiating plugins...")
+    # plugins: Optional[List[Any]] = utils.instantiate_plugins(cfg)
 
-    # Init lightning trainer
-    log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
-    trainer: Trainer = hydra.utils.instantiate(
-        cfg.trainer, callbacks=callbacks, logger=logger, plugins=plugins
-    )
+    # # Init lightning trainer
+    # log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
+    # trainer: Trainer = hydra.utils.instantiate(
+    #     cfg.trainer, callbacks=callbacks, logger=logger, plugins=plugins
+    # )
 
-    # Send parameters from cfg to all lightning loggers
-    object_dict = {
-        "cfg": cfg,
-        "datamodule": datamodule,
-        "model": model,
-        "callbacks": callbacks,
-        "logger": logger,
-        "trainer": trainer,
-    }
+    # # Send parameters from cfg to all lightning loggers
+    # object_dict = {
+    #     "cfg": cfg,
+    #     "datamodule": datamodule,
+    #     "model": model,
+    #     "callbacks": callbacks,
+    #     "logger": logger,
+    #     "trainer": trainer,
+    # }
 
-    if logger:
-        log.info("Logging hyperparameters!")
-        utils.log_hyperparameters(object_dict)
+    # if logger:
+    #     log.info("Logging hyperparameters!")
+    #     utils.log_hyperparameters(object_dict)
 
-    # Log metadata
-    log.info("Logging metadata!")
-    utils.log_metadata(cfg)
+    # # Log metadata
+    # log.info("Logging metadata!")
+    # utils.log_metadata(cfg)
 
-    # Train the model
-    if cfg.get("train"):
-        log.info("Starting training!")
-        trainer.fit(
-            model=model,
-            datamodule=datamodule,
-            ckpt_path=cfg.get("ckpt_path"),
-        )
+    # # Train the model
+    # if cfg.get("train"):
+    #     log.info("Starting training!")
+    #     trainer.fit(
+    #         model=model,
+    #         datamodule=datamodule,
+    #         ckpt_path=cfg.get("ckpt_path"),
+    #     )
 
-    train_metrics = trainer.callback_metrics
+    # train_metrics = trainer.callback_metrics
 
-    # Test the model
-    if cfg.get("test"):
-        log.info("Starting testing!")
-        ckpt_path = trainer.checkpoint_callback.best_model_path
-        if ckpt_path == "":
-            log.warning(
-                "Best ckpt not found! Using current weights for testing..."
-            )
-            ckpt_path = None
-        trainer.test(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
-        log.info(f"Best ckpt path: {ckpt_path}")
+    # # Test the model
+    # if cfg.get("test"):
+    #     log.info("Starting testing!")
+    #     ckpt_path = trainer.checkpoint_callback.best_model_path
+    #     if ckpt_path == "":
+    #         log.warning(
+    #             "Best ckpt not found! Using current weights for testing..."
+    #         )
+    #         ckpt_path = None
+    #     trainer.test(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
+    #     log.info(f"Best ckpt path: {ckpt_path}")
 
-    test_metrics = trainer.callback_metrics
+    # test_metrics = trainer.callback_metrics
 
-    # Save state dicts for best and last checkpoints
-    if cfg.get("save_state_dict"):
-        log.info("Starting saving state dicts!")
-        utils.save_state_dicts(
-            trainer=trainer,
-            model=model,
-            dirname=cfg.paths.output_dir,
-            **cfg.extras.state_dict_saving_params,
-        )
+    # # Save state dicts for best and last checkpoints
+    # if cfg.get("save_state_dict"):
+    #     log.info("Starting saving state dicts!")
+    #     utils.save_state_dicts(
+    #         trainer=trainer,
+    #         model=model,
+    #         dirname=cfg.paths.output_dir,
+    #         **cfg.extras.state_dict_saving_params,
+    #     )
 
-    # merge train and test metrics
-    metric_dict = {**train_metrics, **test_metrics}
+    # # merge train and test metrics
+    # metric_dict = {**train_metrics, **test_metrics}
 
-    return metric_dict, object_dict
+    # return metric_dict, object_dict
 
 
 @utils.register_custom_resolvers(**_HYDRA_PARAMS)
 @hydra.main(**_HYDRA_PARAMS)
 def main(cfg: DictConfig) -> Optional[float]:
 
+    train(cfg) #TODO temp while testing
+
     # train the model
-    metric_dict, _ = train(cfg)
+    # metric_dict, _ = train(cfg)
 
     # safely retrieve metric value for hydra-based hyperparameter optimization
-    metric_value = utils.get_metric_value(
-        metric_dict=metric_dict, metric_name=cfg.get("optimized_metric")
-    )
+    # metric_value = utils.get_metric_value(
+    #     metric_dict=metric_dict, metric_name=cfg.get("optimized_metric")
+    # )
 
-    # return optimized metric
-    return metric_value
+    # # return optimized metric
+    # return metric_value
 
 
 if __name__ == "__main__":
