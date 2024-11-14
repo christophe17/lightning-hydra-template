@@ -1,12 +1,12 @@
 import io
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Tuple
 
 import cv2
 import numpy as np
 import torch
-from PIL import Image
 from torch.utils.data import Dataset
+import torchaudio
 
 
 class BaseAudioDataset(Dataset):
@@ -23,41 +23,28 @@ class BaseAudioDataset(Dataset):
             read_mode (str): Image read mode, `pillow` or `cv2`. Default to `pillow`.
             to_gray (bool): Images to gray mode. Default to False.
         """
-
-        self.read_mode = read_mode
-        self.to_gray = to_gray
         self.transforms = transforms
 
-    def _read_image_(self, image: Any) -> np.ndarray:
-        """Read image from source.
+    def _read_audio_(self, audio: Any) -> torch.Tensor:
+        """Read audio from source.
 
         Args:
-            image (Any): Image source. Could be str, Path or bytes.
+            audio (Any): Audio source. Could be str, Path or bytes.
 
         Returns:
-            np.ndarray: Loaded image.
+            torch.Tensory: Loaded audio
+            int: Sample rate
         """
 
-        if self.read_mode == "pillow":
-            if not isinstance(image, (str, Path)):
-                image = io.BytesIO(image)
-            image = np.asarray(Image.open(image).convert("RGB"))
-        elif self.read_mode == "cv2":
-            if not isinstance(image, (str, Path)):
-                image = np.frombuffer(image, np.uint8)
-                image = cv2.imdecode(image, cv2.COLOR_RGB2BGR)
-            else:
-                image = cv2.imread(image)
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        if isinstance(audio, (str, Path)):
+            signal, sr = torchaudio.load(audio)
         else:
-            raise NotImplementedError("use pillow or cv2")
-        if self.to_gray:
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-        return image
+            signal, sr = torchaudio.load(io.BytesIO(audio))
+        return signal
 
-    def _process_image_(self, image: np.ndarray) -> torch.Tensor:
-        """Process image, including transforms, etc.
+
+    def _process_audio_(self, signal: torch.Tensor) -> torch.Tensor:
+        """Process audio, including transforms, etc.
 
         Args:
             image (np.ndarray): Image in np.ndarray format.
@@ -67,8 +54,8 @@ class BaseAudioDataset(Dataset):
         """
 
         if self.transforms:
-            image = self.transforms(image=image)["image"]
-        return torch.from_numpy(image).permute(2, 0, 1)
+            signal = self.transforms(signal)
+        return signal
 
     def __getitem__(self, index: int) -> Any:
         raise NotImplementedError()

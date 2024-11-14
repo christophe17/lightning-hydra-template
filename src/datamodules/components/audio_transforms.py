@@ -1,10 +1,13 @@
 from typing import Any
 
-import albumentations
 import hydra
 import numpy as np
 from omegaconf import DictConfig
-from PIL import Image
+import torch
+import torchaudio
+import torchaudio.transforms as T
+import random
+
 
 
 class AudioTransformsWrapper:
@@ -15,20 +18,22 @@ class AudioTransformsWrapper:
             transforms_cfg (DictConfig): Transforms config.
         """
 
-        augmentations = []
+        transformations = []
         if not transforms_cfg.get("order"):
             raise RuntimeError(
                 "TransformsWrapper requires param <order>, i.e."
-                "order of augmentations as List[augmentation name]"
+                "order of transforms as List[transform name]"
             )
-        for augmentation_name in transforms_cfg.get("order"):
-            augmentation = hydra.utils.instantiate(
-                transforms_cfg.get(augmentation_name), _convert_="object"
+        for transform_name in transforms_cfg.get("order"):
+            transform = hydra.utils.instantiate(
+                transforms_cfg.get(transform_name), _convert_="object"
             )
-            augmentations.append(augmentation)
-        self.augmentations = albumentations.Compose(augmentations)
+            transformations.append(transform)
 
-    def __call__(self, image: Any, **kwargs: Any) -> Any:
+        
+        self.transformations = torch.nn.Sequential(*transformations)
+
+    def __call__(self, signal: Any, **kwargs: Any) -> Any:
         """Apply TransformsWrapper module.
 
         Args:
@@ -39,32 +44,15 @@ class AudioTransformsWrapper:
             Any: Transformation results.
         """
 
-        if isinstance(image, Image.Image):
-            image = np.asarray(image)
-        return self.augmentations(image=image, **kwargs)
+        # if isinstance(signal, Image.Image):
+        #     image = np.asarray(image)
+        return self.transformations(signal)
 
 
-
-import torch
-import torchaudio
-import torchaudio.transforms as T
-import random
 
 class Normalize(torch.nn.Module):
     def forward(self, waveform):
         return waveform / waveform.abs().max()
-
-class RandomResample(torch.nn.Module):
-    def __init__(self, min_freq, max_freq):
-        super().__init__()
-        self.min_freq = min_freq
-        self.max_freq = max_freq
-
-    def forward(self, waveform):
-        orig_freq = waveform.shape[1]  # assuming input is [channel, time]
-        new_freq = random.randint(self.min_freq, self.max_freq)
-        resampler = T.Resample(orig_freq=orig_freq, new_freq=new_freq)
-        return resampler(waveform)
 
 class TimeStretch(torch.nn.Module):
     def __init__(self, min_rate=0.8, max_rate=1.2):
@@ -85,17 +73,3 @@ class AddNoise(torch.nn.Module):
         noise = self.noise_factor * torch.randn_like(waveform)
         return waveform + noise
 
-
-# Create the transformation pipeline using nn.Sequential
-pipeline = torch.nn.Sequential(
-    Normalize(),
-    RandomResample(min_freq=8000, max_freq=16000),
-    TimeStretch(min_rate=0.8, max_rate=1.2),
-    AddNoise(noise_factor=0.01)
-)
-
-# Load the audio file
-waveform, sample_rate = torchaudio.load(file_path)
-
-# Apply the pipeline
-processed_waveform = pipeline(waveform)

@@ -6,7 +6,7 @@ from omegaconf import DictConfig
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset
 
-from src.datamodules.components.transforms import TransformsWrapper
+from src.datamodules.components.audio_transforms import AudioTransformsWrapper
 
 
 class DaicDataModule(LightningDataModule):
@@ -50,6 +50,7 @@ class DaicDataModule(LightningDataModule):
         """
 
         super().__init__()
+
         self.cfg_datasets = datasets
         self.cfg_loaders = loaders
         self.transforms = transforms
@@ -61,7 +62,8 @@ class DaicDataModule(LightningDataModule):
     def _get_dataset_(
         self, split_name: str, dataset_name: Optional[str] = None
     ) -> Dataset:
-        transforms = TransformsWrapper(self.transforms.get(split_name))
+        transforms = AudioTransformsWrapper(self.transforms.get(split_name))
+        print(self.cfg_datasets)
         cfg = self.cfg_datasets.get(split_name)
         if dataset_name:
             cfg = cfg.get(dataset_name)
@@ -111,87 +113,3 @@ class DaicDataModule(LightningDataModule):
         """Clean up after fit or test."""
         pass
 
-
-class MultipleDataModule(SingleDataModule):
-    def __init__(
-        self, datasets: DictConfig, loaders: DictConfig, transforms: DictConfig
-    ) -> None:
-        """DataModule with multiple train, val and test dataloaders.
-
-        Args:
-            datasets (DictConfig): Datasets config.
-            loaders (DictConfig): Loaders config.
-            transforms (DictConfig): Transforms config.
-        """
-
-        super().__init__(
-            datasets=datasets, loaders=loaders, transforms=transforms
-        )
-        self.train_set: Optional[Dict[str, Dataset]] = None
-        self.valid_set: Optional[Dict[str, Dataset]] = None
-        self.test_set: Optional[Dict[str, Dataset]] = None
-        self.predict_set: Dict[str, Dataset] = OrderedDict()
-
-    def setup(self, stage: Optional[str] = None) -> None:
-        """Load data. Set variables: `self.train_set`, `self.valid_set`,
-        `self.test_set`, `self.predict_set`.
-
-        This method is called by lightning with both `trainer.fit()` and
-        `trainer.test()`, so be careful not to execute things like random split
-        twice!
-        """
-        # load and split datasets only if not loaded already
-        if not self.train_set and not self.valid_set and not self.test_set:
-            self.train_set = OrderedDict()
-            for dataset_name in self.cfg_datasets.get("train").keys():
-                self.train_set[dataset_name] = self._get_dataset_(
-                    "train", dataset_name=dataset_name
-                )
-            self.valid_set = OrderedDict()
-            for dataset_name in self.cfg_datasets.get("valid").keys():
-                self.valid_set[dataset_name] = self._get_dataset_(
-                    "valid", dataset_name=dataset_name
-                )
-            self.test_set = OrderedDict()
-            for dataset_name in self.cfg_datasets.get("test").keys():
-                self.test_set[dataset_name] = self._get_dataset_(
-                    "test", dataset_name=dataset_name
-                )
-        # load predict datasets only if it exists in config
-        if (stage == "predict") and self.cfg_datasets.get("predict"):
-            for dataset_name in self.cfg_datasets.get("predict").keys():
-                self.predict_set[dataset_name] = self._get_dataset_(
-                    "predict", dataset_name=dataset_name
-                )
-
-    def train_dataloader(
-        self,
-    ) -> Union[DataLoader, List[DataLoader], Dict[str, DataLoader]]:
-        loaders = dict()
-        for dataset_name, dataset in self.train_set.items():
-            loaders[dataset_name] = DataLoader(
-                dataset, **self.cfg_loaders.get("train")
-            )
-        return loaders
-
-    def val_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
-        loaders = []
-        for _, dataset in self.valid_set.items():
-            loaders.append(
-                DataLoader(dataset, **self.cfg_loaders.get("valid"))
-            )
-        return loaders
-
-    def test_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
-        loaders = []
-        for _, dataset in self.test_set.items():
-            loaders.append(DataLoader(dataset, **self.cfg_loaders.get("test")))
-        return loaders
-
-    def predict_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
-        loaders = []
-        for _, dataset in self.predict_set.items():
-            loaders.append(
-                DataLoader(dataset, **self.cfg_loaders.get("predict"))
-            )
-        return loaders

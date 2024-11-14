@@ -1,9 +1,9 @@
-_target_: src.datamodules.datamodules.DaicDataModule
+_target_: src.datamodules.daic_datamodules.DaicDataModule
 
 defaults:
   - _self_
-  - loaders: default.yaml
-  - transforms: default.yaml
+  - loaders: daic.yaml
+  - transforms: audio.yaml
 
 # Choose labels tensor type in dataset based on loss type you use, e.g.:
 # - torch.nn.BCEWithLogitsLoss requires torch.FloatTensor
@@ -11,19 +11,22 @@ defaults:
 
 datasets:
   train:
-    _target_: src.datamodules.datasets.DaicDataset
+    _target_: src.datamodules.daic_datasets.DaicDataset
     json_path: ${paths.data_dir}/daic-woz/annotation.json
+    data_path: ${paths.data_dir}/daic-woz/raw
     label_type: "torch.FloatTensor"
 
-  # valid:
-  #   _target_: src.datamodules.datasets.DaicDataset
-  #   json_path: ${paths.data_dir}/valid/data.json
-  #   label_type: "torch.FloatTensor"
+  valid:
+    _target_: src.datamodules.daic_datasets.DaicDataset
+    json_path: ${paths.data_dir}/daic-woz/annotation.json
+    data_path: ${paths.data_dir}/daic-woz/raw
+    label_type: "torch.FloatTensor"
 
-  # test:
-  #   _target_: src.datamodules.datasets.DaicDataset
-  #   json_path: ${paths.data_dir}/test/data.json
-  #   label_type: "torch.FloatTensor"
+  test:
+    _target_: src.datamodules.daic_datasets.DaicDataset
+    json_path: ${paths.data_dir}/daic-woz/annotation.json
+    data_path: ${paths.data_dir}/daic-woz/raw
+    label_type: "torch.FloatTensor"
 
   # predict:
   #   dataset1:

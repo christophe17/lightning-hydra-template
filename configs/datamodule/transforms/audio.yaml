@@ -1,0 +1,53 @@
+train:
+  order:
+    [
+      "mel_spectrogram",
+      "amplitude_to_db",
+      "normalize",
+    ]
+  mel_spectrogram:
+    _target_: torchaudio.transforms.MelSpectrogram
+    sample_rate: 22050
+    n_fft: 1024
+    hop_length: 512
+    n_mels: 64
+  amplitude_to_db:
+    _target_: torchaudio.transforms.AmplitudeToDB
+  normalize:
+    _target_: src.datamodules.components.audio_transforms.Normalize
+
+valid:
+  order:
+    [
+      "mel_spectrogram",
+      "amplitude_to_db",
+      "normalize",
+    ]
+  mel_spectrogram:
+    _target_: torchaudio.transforms.MelSpectrogram
+    sample_rate: 22050
+    n_fft: 1024
+    hop_length: 512
+    n_mels: 64
+  amplitude_to_db:
+    _target_: torchaudio.transforms.AmplitudeToDB
+  normalize:
+    _target_: src.datamodules.components.audio_transforms.Normalize
+
+test:
+  order:
+    [
+      "mel_spectrogram",
+      "amplitude_to_db",
+      "normalize",
+    ]
+  mel_spectrogram:
+    _target_: torchaudio.transforms.MelSpectrogram
+    sample_rate: 22050
+    n_fft: 1024
+    hop_length: 512
+    n_mels: 64
+  amplitude_to_db:
+    _target_: torchaudio.transforms.AmplitudeToDB
+  normalize:
+    _target_: src.datamodules.components.audio_transforms.Normalize

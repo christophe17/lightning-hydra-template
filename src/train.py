@@ -87,6 +87,7 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
         cfg.datamodule, _recursive_=False
     )
 
+
     return None, None
     # Init lightning model
     # log.info(f"Instantiating lightning model <{cfg.module._target_}>")

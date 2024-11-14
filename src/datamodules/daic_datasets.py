@@ -72,6 +72,7 @@ class DaicDataset(BaseAudioDataset):
         data_path = "" if data_path is None else data_path
         self.data_path = data_path = Path(data_path)
         self.data_file = None
+
         if data_path.is_file():
             if data_path.suffix != ".h5":
                 raise RuntimeError(f"'{data_path}' must be a h5 file.")
@@ -87,12 +88,12 @@ class DaicDataset(BaseAudioDataset):
             source = self.data_path / key
         else:
             source = data_file[key]
-        image = self._read_image_(source)
-        image = self._process_image_(image)
+        signal, sr = self._read_audio_(source)
+        signal = self._process_audio_(signal, sr)
         label = torch.tensor(self.annotation[key]).type(self.label_type)
         if self.include_names:
-            return {"image": image.float(), "label": label, "name": key}
-        return {"image": image.float(), "label": label}
+            return {"audio": signal, "label": label, "name": key}
+        return {"audio": signal, "label": label}
 
     def get_weights(self) -> List[float]:
         label_list = [self.annotation[key] for key in self.keys]
