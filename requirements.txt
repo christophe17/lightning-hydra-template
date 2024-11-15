@@ -28,6 +28,7 @@ omegaconf
 tqdm
 tensorflow
 pynvml
+soundfile # backend for torchaudio
 # sqlalchemy==1.4.46 # hydra-optuna-sweeper not compatible with 2.0.0
 
 # --------- data --------- #

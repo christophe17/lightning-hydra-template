@@ -30,7 +30,6 @@ class AudioTransformsWrapper:
             )
             transformations.append(transform)
 
-        
         self.transformations = torch.nn.Sequential(*transformations)
 
     def __call__(self, signal: Any, **kwargs: Any) -> Any:

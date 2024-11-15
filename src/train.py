@@ -87,6 +87,13 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
         cfg.datamodule, _recursive_=False
     )
 
+    datamodule.prepare_data()
+    datamodule.setup('fit')
+    train_dataloader = datamodule.train_dataloader()
+
+    train_dataloader.dataset
+
+    data = next(iter(train_dataloader))
 
     return None, None
     # Init lightning model

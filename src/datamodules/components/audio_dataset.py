@@ -13,8 +13,6 @@ class BaseAudioDataset(Dataset):
     def __init__(
         self,
         transforms: Optional[Callable] = None,
-        read_mode: str = "pillow",
-        to_gray: bool = False,
     ) -> None:
         """BaseDataset.
 
@@ -40,6 +38,7 @@ class BaseAudioDataset(Dataset):
             signal, sr = torchaudio.load(audio)
         else:
             signal, sr = torchaudio.load(io.BytesIO(audio))
+        
         return signal
 
 

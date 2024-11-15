@@ -2,9 +2,11 @@ from collections import OrderedDict
 from typing import Dict, List, Optional, Union
 
 import hydra
+import torch
+
 from omegaconf import DictConfig
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, random_split
 
 from src.datamodules.components.audio_transforms import AudioTransformsWrapper
 
@@ -50,7 +52,6 @@ class DaicDataModule(LightningDataModule):
         """
 
         super().__init__()
-
         self.cfg_datasets = datasets
         self.cfg_loaders = loaders
         self.transforms = transforms
@@ -63,7 +64,6 @@ class DaicDataModule(LightningDataModule):
         self, split_name: str, dataset_name: Optional[str] = None
     ) -> Dataset:
         transforms = AudioTransformsWrapper(self.transforms.get(split_name))
-        print(self.cfg_datasets)
         cfg = self.cfg_datasets.get(split_name)
         if dataset_name:
             cfg = cfg.get(dataset_name)
@@ -78,17 +78,25 @@ class DaicDataModule(LightningDataModule):
         `trainer.test()`, so be careful not to execute things like random split
         twice!
         """
+
         # load and split datasets only if not loaded already
         if not self.train_set and not self.valid_set and not self.test_set:
-            self.train_set = self._get_dataset_("train")
-            self.valid_set = self._get_dataset_("valid")
-            self.test_set = self._get_dataset_("test")
-        # load predict datasets only if it exists in config
-        if (stage == "predict") and self.cfg_datasets.get("predict"):
-            for dataset_name in self.cfg_datasets.get("predict").keys():
-                self.predict_set[dataset_name] = self._get_dataset_(
-                    "predict", dataset_name=dataset_name
-                )
+
+            transforms = AudioTransformsWrapper(self.transforms)
+            cfg = self.cfg_datasets
+
+            dataset: Dataset = hydra.utils.instantiate(cfg, transforms=transforms)
+            seed = self.cfg_datasets.get("seed")
+
+            self.train_set, self.valid_set, self.test_set = random_split(
+                dataset=dataset,
+                lengths=self.cfg_datasets.get("train_val_test_split"),
+                generator=torch.Generator().manual_seed(seed),
+            )
+
+        # load predict dataset only if test set existed already
+        if (stage == "predict") and self.test_set:
+            self.predict_set = {"PredictDataset": self.test_set}
 
     def train_dataloader(
         self,
